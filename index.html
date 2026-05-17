@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Coach Hub">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
+  <title>Coach Hub</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <!-- Tabler Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Coach Hub</div>
+      <div class="topbar-date" id="topbarDate"></div>
+    </div>
+    <div class="topbar-right">
+      <span class="saved-ind" id="savedInd"><i class="ti ti-check"></i> gespeichert</span>
+      <button class="settings-btn" onclick="showSettings()" aria-label="Einstellungen">
+        <i class="ti ti-settings"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- CHECK-IN TAB -->
+    <div class="tab active" id="tab-checkin">
+      <div class="readiness-box" id="readBox">
+        <div class="readiness-icon" id="readIcon">--</div>
+        <div class="readiness-info">
+          <div class="readiness-title" id="readTitle">Slider einstellen...</div>
+          <div class="readiness-sub" id="readSub">HRV + Schlaf eingeben für Tagesempfehlung.</div>
+        </div>
+        <div class="readiness-score" id="readScore">-</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Morgenwerte</div>
+        <div class="slider-row">
+          <label class="slider-label">Schlaf</label>
+          <input type="range" min="3" max="11" step="0.5" value="7" id="s_sleep"
+            oninput="updSlider('s_sleep','sv_sleep',v=>parseFloat(v).toFixed(1)+'h');calcReady();autoSave()">
+          <span class="slider-val" id="sv_sleep">7.0h</span>
+        </div>
+        <div class="slider-row">
+          <label class="slider-label">Schlafqualität</label>
+          <input type="range" min="1" max="10" step="1" value="7" id="s_sq"
+            oninput="updSlider('s_sq','sv_sq',v=>v+'/10');calcReady();autoSave()">
+          <span class="slider-val" id="sv_sq">7/10</span>
+        </div>
+        <div class="slider-row">
+          <label class="slider-label">HRV</label>
+          <input type="range" min="40" max="180" step="1" value="110" id="s_hrv"
+            oninput="updSlider('s_hrv','sv_hrv',v=>v+'ms');calcReady();autoSave()">
+          <span class="slider-val" id="sv_hrv">110ms</span>
+        </div>
+        <div class="slider-row">
+          <label class="slider-label">Ruhepuls</label>
+          <input type="range" min="30" max="80" step="1" value="45" id="s_hr"
+            oninput="updSlider('s_hr','sv_hr',v=>v+'bpm');calcReady();autoSave()">
+          <span class="slider-val" id="sv_hr">45bpm</span>
+        </div>
+        <div class="slider-row">
+          <label class="slider-label">Energie</label>
+          <input type="range" min="1" max="10" step="1" value="7" id="s_en"
+            oninput="updSlider('s_en','sv_en',v=>v+'/10');calcReady();autoSave()">
+          <span class="slider-val" id="sv_en">7/10</span>
+        </div>
+        <div class="slider-row">
+          <label class="slider-label">Muskelkater</label>
+          <input type="range" min="1" max="10" step="1" value="2" id="s_sore"
+            oninput="updSlider('s_sore','sv_sore',v=>v+'/10');calcReady();autoSave()">
+          <span class="slider-val" id="sv_sore">2/10</span>
+        </div>
+        <div class="slider-row">
+          <label class="slider-label">Stress</label>
+          <input type="range" min="1" max="10" step="1" value="3" id="s_str"
+            oninput="updSlider('s_str','sv_str',v=>v+'/10');calcReady();autoSave()">
+          <span class="slider-val" id="sv_str">3/10</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Training heute</div>
+        <div class="tag-row" id="sportTags">
+          <span class="tag" onclick="toggleTag(this);autoSave()">Laufen</span>
+          <span class="tag" onclick="toggleTag(this);autoSave()">Gym</span>
+          <span class="tag" onclick="toggleTag(this);autoSave()">Schwimmen</span>
+          <span class="tag" onclick="toggleTag(this);autoSave()">Fussball</span>
+          <span class="tag" onclick="toggleTag(this);autoSave()">Heimtraining</span>
+          <span class="tag" onclick="toggleTag(this);autoSave()">Mobility</span>
+          <span class="tag" onclick="toggleTag(this);autoSave()">Rest</span>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-field">
+            <label class="form-label">Dauer (min)</label>
+            <input class="inp" type="number" placeholder="45" id="s_dur" oninput="autoSave()">
+          </div>
+          <div class="form-field">
+            <label class="form-label">RPE (1–10)</label>
+            <input class="inp" type="number" placeholder="7" id="s_rpe" min="1" max="10" oninput="autoSave()">
+          </div>
+        </div>
+        <div class="form-field" style="margin-top:8px;">
+          <label class="form-label">Notizen</label>
+          <textarea class="inp" rows="2" placeholder="Wie lief es?" id="s_note" oninput="autoSave()"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Schnell-Ernährung</div>
+        <div class="form-grid-2">
+          <div class="form-field">
+            <label class="form-label">Kcal (geschätzt)</label>
+            <input class="inp" type="number" placeholder="2000" id="s_kcal" oninput="autoSave()">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Protein (g)</label>
+            <input class="inp" type="number" placeholder="90" id="s_prot" oninput="autoSave()">
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="sendCheckin()">
+        <i class="ti ti-arrow-up-circle"></i> Check-in an Coach senden
+      </button>
+    </div>
+
+    <!-- COACH CHAT TAB -->
+    <div class="tab" id="tab-coach">
+      <div class="quick-row">
+        <button class="quick-btn" onclick="quickAsk('Was soll ich heute trainieren?')">Training heute?</button>
+        <button class="quick-btn" onclick="quickAsk('Bereit für Intervalle?')">Intervalle ok?</button>
+        <button class="quick-btn" onclick="quickAsk('Was fehlt mir in der Ernährung?')">Ernährung check</button>
+        <button class="quick-btn" onclick="quickAsk('Gib mir ein 10 Minuten Mobility Programm.')">Mobility jetzt</button>
+        <button class="quick-btn" onclick="quickAsk('Erkläre meine Spiroergometrie-Ergebnisse.')">Spiro erklären</button>
+        <button class="quick-btn" onclick="quickAsk('Wie verbessere ich meinen Tiefschlaf?')">Tiefschlaf-Tipps</button>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-msg coach">
+          <div class="chat-bubble">Hey! Ich bin dein persönlicher Coach. Ich kenne dein komplettes Profil, deine Spiro-Daten und deine Schwachstellen. Frag mich alles — Training, Ernährung, Recovery, Technik. Ich antworte direkt und konkret.</div>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <textarea class="chat-input" id="chatInput" placeholder="Frage deinen Coach..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+        <button class="chat-send-btn" onclick="sendChat()" aria-label="Senden">
+          <i class="ti ti-arrow-up"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD TAB -->
+    <div class="tab" id="tab-dashboard">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">VO2max</div>
+          <div class="metric-value">47.3<span class="metric-unit"> ml/kg</span></div>
+          <div class="metric-delta up"><i class="ti ti-trending-up"></i> +5.1 seit Okt</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">HRV Ø</div>
+          <div class="metric-value">78<span class="metric-unit"> ms</span></div>
+          <div class="metric-delta neu">90d-Schnitt</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Ruhepuls</div>
+          <div class="metric-value">45<span class="metric-unit"> bpm</span></div>
+          <div class="metric-delta up">Athleten-Niv.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Schlaf Ø</div>
+          <div class="metric-value">6.8<span class="metric-unit"> h</span></div>
+          <div class="metric-delta dn">Ziel: 8h</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Protein Ø</div>
+          <div class="metric-value">64<span class="metric-unit"> g</span></div>
+          <div class="metric-delta dn">Ziel: 113g</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Akt. Kcal</div>
+          <div class="metric-value">585<span class="metric-unit"> kcal</span></div>
+          <div class="metric-delta neu">30d-Schnitt</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Ziele</div>
+        <div class="goal-bar">
+          <div class="goal-bar-top"><span>VO2max → 52</span><span>47.3 / 52</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:91%;background:#378ADD;"></div></div>
+        </div>
+        <div class="goal-bar">
+          <div class="goal-bar-top"><span>Protein → 113g</span><span>64 / 113g</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:57%;background:#E24B4A;"></div></div>
+        </div>
+        <div class="goal-bar">
+          <div class="goal-bar-top"><span>Schlaf → 8h</span><span>6.8 / 8h</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:85%;background:#EF9F27;"></div></div>
+        </div>
+        <div class="goal-bar" style="margin:0;">
+          <div class="goal-bar-top"><span>Tiefschlaf → 1.5h</span><span>0.72 / 1.5h</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:48%;background:#E24B4A;"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">VO2max Verlauf</div>
+        <div class="chart-container">
+          <canvas id="vo2Chart" aria-label="VO2max Verlauf Oktober 2025 bis Mai 2026"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">HRV Wochentrend</div>
+        <div class="chart-container">
+          <canvas id="hrvChart" aria-label="HRV wöchentlicher Durchschnitt"></canvas>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="sendToCoach('Erstelle meinen wöchentlichen Fortschritts-Report.')">
+        <i class="ti ti-file-analytics"></i> Wöchentlichen Report erstellen
+      </button>
+    </div>
+
+    <!-- WORKOUT TAB -->
+    <div class="tab" id="tab-workout">
+      <!-- WORKOUT GENERATOR -->
+      <div class="card">
+        <div class="card-title">Workout Generator</div>
+        <div class="form-grid-2">
+          <div class="form-field">
+            <label class="form-label">Fokus</label>
+            <select class="inp" id="w_fokus">
+              <option>Oberkörper</option><option>Unterkörper</option>
+              <option>Ganzkörper</option><option>Core</option>
+              <option>Push</option><option>Pull</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Dauer</label>
+            <select class="inp" id="w_dauer">
+              <option>30 min</option><option selected>45 min</option>
+              <option>60 min</option><option>75 min</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Equipment</label>
+            <select class="inp" id="w_equip">
+              <option>Gym (voll)</option><option>Kurzhanteln</option><option>Kein Equipment</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Readiness</label>
+            <select class="inp" id="w_ready">
+              <option>Top</option><option selected>Gut</option>
+              <option>Moderat</option><option>Niedrig</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="generateWorkout()">
+          <i class="ti ti-sparkles"></i> Workout generieren
+        </button>
+      </div>
+      <div id="workoutResult" style="display:none;">
+        <div class="card" id="workoutCard"></div>
+        <button class="btn btn-secondary" onclick="sendToCoach('Erkläre mir die Übungen aus meinem heutigen Workout genauer und gib Ausführungstipps.')">
+          <i class="ti ti-info-circle"></i> Übungen vom Coach erklären lassen
+        </button>
+      </div>
+
+      <!-- LAUF PLANER -->
+      <div class="section-label">Laufsession planen</div>
+      <div class="card">
+        <div class="zones-reference">
+          <div class="zone-chip z1">Z1 &lt;101bpm &gt;13:56/km</div>
+          <div class="zone-chip z2">Z2 101–112bpm 10:54–13:56</div>
+          <div class="zone-chip z3">Z3 112–136bpm 7:23–10:54</div>
+          <div class="zone-chip z4">Z4 136–172bpm 4:58–7:23</div>
+          <div class="zone-chip z5">Z5 172–186bpm 4:24–4:58</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="form-grid-2">
+          <div class="form-field">
+            <label class="form-label">Typ</label>
+            <select class="inp" id="l_typ">
+              <option>Grundlauf Z2</option><option>Intervalle Z4/Z5</option>
+              <option>Tempodauerlauf Z3</option><option>Regeneration Z1</option><option>Fartlek</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Dauer</label>
+            <select class="inp" id="l_dauer">
+              <option>20–30 min</option><option>30–45 min</option>
+              <option selected>45–60 min</option><option>60–90 min</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Readiness</label>
+            <select class="inp" id="l_ready">
+              <option>Top</option><option selected>Gut</option><option>Moderat</option><option>Niedrig</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Ziel</label>
+            <select class="inp" id="l_ziel">
+              <option>Ausdauer aufbauen</option><option>VO2max steigern</option>
+              <option>Tempo verbessern</option><option>Aktive Erholung</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="generateRun()">
+          <i class="ti ti-map-2"></i> Laufsession generieren
+        </button>
+      </div>
+      <div id="runResult" style="display:none;">
+        <div id="runCard"></div>
+        <button class="btn btn-secondary" onclick="sendToCoach('Gib mir Tipps für meine heutige Laufsession.')">
+          <i class="ti ti-message-bolt"></i> Coach-Tipps zur Session
+        </button>
+      </div>
+    </div>
+
+    <!-- NUTRITION TAB -->
+    <div class="tab" id="tab-nutrition">
+      <!-- KI SNAPSHOT -->
+      <div class="card">
+        <div class="card-title">KI Ernährungs-Snapshot</div>
+        <div class="form-field">
+          <label class="form-label">Was hast du heute gegessen? (Freitext)</label>
+          <textarea class="inp" rows="4" id="snap_text" placeholder="z.B. Frühstück: Haferflocken mit Milch. Mittag: Hähnchen 200g mit Reis. Abends Pizza. Snack: Proteinriegel..."></textarea>
+        </div>
+        <div class="form-grid-2" style="margin-top:8px;">
+          <div class="form-field">
+            <label class="form-label">Trainingstag?</label>
+            <select class="inp" id="snap_train">
+              <option value="yes">Ja (+300 kcal)</option>
+              <option value="no">Nein / Ruhetag</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Ziel heute</label>
+            <select class="inp" id="snap_goal">
+              <option>Muskelaufbau</option><option>Ausdauer</option>
+              <option selected>Allgemein</option><option>Defizit</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="analyzeSnap()">
+          <i class="ti ti-sparkles"></i> KI-Makro-Analyse starten
+        </button>
+      </div>
+      <div id="snapLoading" class="loading-box" style="display:none;">
+        <i class="ti ti-refresh spin"></i> KI analysiert deine Mahlzeiten...
+      </div>
+      <div id="snapOut" style="display:none;">
+        <div class="card">
+          <div class="card-title">Geschätzte Makros</div>
+          <div class="nut-bar-row"><span class="nut-bar-label">Kalorien</span><div class="nut-track"><div class="nut-fill" id="sbar_kcal" style="background:#378ADD;width:0%;"></div></div><span class="nut-bar-val"><span id="sv_kcal">0</span> kcal</span></div>
+          <div class="nut-bar-row"><span class="nut-bar-label">Protein</span><div class="nut-track"><div class="nut-fill" id="sbar_prot" style="background:#639922;width:0%;"></div></div><span class="nut-bar-val"><span id="sv_prot">0</span>g</span></div>
+          <div class="nut-bar-row"><span class="nut-bar-label">Kohlenhydrate</span><div class="nut-track"><div class="nut-fill" id="sbar_carb" style="background:#EF9F27;width:0%;"></div></div><span class="nut-bar-val"><span id="sv_carb">0</span>g</span></div>
+          <div class="nut-bar-row" style="margin:0;"><span class="nut-bar-label">Fett</span><div class="nut-track"><div class="nut-fill" id="sbar_fat" style="background:#888780;width:0%;"></div></div><span class="nut-bar-val"><span id="sv_fat">0</span>g</span></div>
+        </div>
+        <div class="card" id="snapFeedback"></div>
+      </div>
+
+      <!-- MAHLZEITEN LOG -->
+      <div class="section-label">Mahlzeiten heute</div>
+      <div class="card">
+        <div class="nut-bar-row"><span class="nut-bar-label">Kalorien</span><div class="nut-track"><div class="nut-fill" id="nbar_kcal" style="background:#378ADD;width:0%;"></div></div><span class="nut-bar-val"><span id="nv_kcal">0</span>/2400</span></div>
+        <div class="nut-bar-row"><span class="nut-bar-label">Protein</span><div class="nut-track"><div class="nut-fill" id="nbar_prot" style="background:#639922;width:0%;"></div></div><span class="nut-bar-val"><span id="nv_prot">0</span>/113g</span></div>
+        <div class="nut-bar-row" style="margin:0;"><span class="nut-bar-label">Kohlenhydrate</span><div class="nut-track"><div class="nut-fill" id="nbar_carb" style="background:#EF9F27;width:0%;"></div></div><span class="nut-bar-val"><span id="nv_carb">0</span>/250g</span></div>
+      </div>
+      <div class="card">
+        <div class="form-field">
+          <label class="form-label">Mahlzeit hinzufügen</label>
+          <input class="inp" type="text" id="f_name" placeholder="z.B. Hähnchenbrust 200g">
+        </div>
+        <div class="form-grid-2" style="margin-top:8px;">
+          <div class="form-field"><label class="form-label">Kcal</label><input class="inp" type="number" id="f_kcal" placeholder="300"></div>
+          <div class="form-field"><label class="form-label">Protein (g)</label><input class="inp" type="number" id="f_prot" placeholder="30"></div>
+          <div class="form-field"><label class="form-label">KH (g)</label><input class="inp" type="number" id="f_carb" placeholder="20"></div>
+          <div class="form-field"><label class="form-label">Fett (g)</label><input class="inp" type="number" id="f_fat" placeholder="8"></div>
+        </div>
+        <button class="btn btn-secondary" onclick="addFood()" style="margin-top:8px;"><i class="ti ti-plus"></i> Hinzufügen</button>
+      </div>
+      <div class="card" id="foodListCard">
+        <div class="empty-state">Noch keine Mahlzeiten eingetragen.</div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="sendToCoach('Erstelle mir einen Ernährungs-Tagesplan: 2400 kcal, 113g Protein, Gym-Training heute, 63kg Athlet.')">
+        <i class="ti ti-sparkles"></i> KI-Tagesplan generieren
+      </button>
+    </div>
+
+    <!-- LOGBOOK TAB -->
+    <div class="tab" id="tab-logbook">
+      <div class="card">
+        <div class="card-title">Neuer Eintrag</div>
+        <div class="form-field">
+          <label class="form-label">Titel</label>
+          <input class="inp" type="text" id="l_title" placeholder="z.B. 5k PR, erste Z2-Woche...">
+        </div>
+        <div class="form-field" style="margin-top:8px;">
+          <label class="form-label">Notiz</label>
+          <textarea class="inp" rows="3" id="l_note" placeholder="Was ist passiert? Wie hast du dich gefühlt?"></textarea>
+        </div>
+        <div class="form-grid-2" style="margin-top:8px;">
+          <div class="form-field">
+            <label class="form-label">Stimmung</label>
+            <select class="inp" id="l_mood">
+              <option value="great">Stark 💪</option>
+              <option value="ok" selected>Ok 👍</option>
+              <option value="low">Schwach 😓</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Kategorie</label>
+            <select class="inp" id="l_cat">
+              <option>Training</option><option>Erholung</option>
+              <option>Ernährung</option><option>Schlaf</option><option>Meilenstein</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addLog()" style="margin-top:8px;">
+          <i class="ti ti-plus"></i> Eintrag speichern
+        </button>
+      </div>
+      <div class="section-label">Verlauf</div>
+      <div id="logList"></div>
+    </div>
+
+    <!-- MOBILITY TAB -->
+    <div class="tab" id="tab-mobility">
+      <div class="section-label"><i class="ti ti-sun"></i> Morgen (8 min)</div>
+      <div class="card">
+        <div class="exercise-item">
+          <div class="exercise-head"><span class="exercise-name">90/90 Hip Stretch</span><span class="badge badge-teal">2×60s/Seite</span></div>
+          <div class="exercise-desc">Hüftrotation — kritisch für Laufen + Fußball. Innen- und Außenrotation gleichzeitig.</div>
+        </div>
+        <div class="exercise-item">
+          <div class="exercise-head"><span class="exercise-name">World's Greatest Stretch</span><span class="badge badge-teal">5 Wdh./Seite</span></div>
+          <div class="exercise-desc">Hüftbeuger, Thoraxrotation, Schulter — eine Übung für alles.</div>
+        </div>
+        <div class="exercise-item">
+          <div class="exercise-head"><span class="exercise-name">Cat-Cow + Thorax-Rotation</span><span class="badge badge-teal">10 Wdh.</span></div>
+          <div class="exercise-desc">Wirbelsäulenmobilität nach Schlaf. Schultergürtel aktivieren.</div>
+        </div>
+        <div class="exercise-item last">
+          <div class="exercise-head"><span class="exercise-name">Ankle Circles + Dorsiflexion</span><span class="badge badge-teal">10 Wdh./Seite</span></div>
+          <div class="exercise-desc">Sprunggelenksmobilität → direkte Laufökonomie-Verbesserung.</div>
+        </div>
+      </div>
+
+      <div class="section-label"><i class="ti ti-run"></i> Nach Lauf (10 min)</div>
+      <div class="card">
+        <div class="exercise-item">
+          <div class="exercise-head"><span class="exercise-name">Hüftbeuger-Stretch stehend</span><span class="badge badge-amber">90s/Seite</span></div>
+          <div class="exercise-desc">Psoas + Iliacus — beim Laufen stark belastet, chronisch verkürzt.</div>
+        </div>
+        <div class="exercise-item">
+          <div class="exercise-head"><span class="exercise-name">Piriformis-Dehnung liegend</span><span class="badge badge-amber">60s/Seite</span></div>
+          <div class="exercise-desc">Außenrotator Hüfte — Ischias-Prävention bei Läufern.</div>
+        </div>
+        <div class="exercise-item">
+          <div class="exercise-head"><span class="exercise-name">Wadendehnen (Gastrocnemius + Soleus)</span><span class="badge badge-amber">60s/Seite</span></div>
+          <div class="exercise-desc">Achillessehne + Plantarfaszie schützen. Prävention Nr. 1.</div>
+        </div>
+        <div class="exercise-item last">
+          <div class="exercise-head"><span class="exercise-name">Hamstring-Stretch liegend</span><span class="badge badge-amber">90s/Seite</span></div>
+          <div class="exercise-desc">Beckenkippung und Laufhaltung direkt verbessern.</div>
+        </div>
+      </div>
+
+      <div class="section-label"><i class="ti ti-barbell"></i> Nach Gym (8 min)</div>
+      <div class="card">
+        <div class="exercise-item">
+          <div class="exercise-head"><span class="exercise-name">Brust + Schulter öffnen</span><span class="badge badge-blue">60s</span></div>
+          <div class="exercise-desc">Gegenbewegung nach Drücken — Rundrücken-Adaption verhindern.</div>
+        </div>
+        <div class="exercise-item">
+          <div class="exercise-head"><span class="exercise-name">Child's Pose + Lat-Stretch</span><span class="badge badge-blue">90s</span></div>
+          <div class="exercise-desc">Rückenstrecker dekomprimieren nach schwerem Heben.</div>
+        </div>
+        <div class="exercise-item">
+          <div class="exercise-head"><span class="exercise-name">Couch Stretch</span><span class="badge badge-blue">90s/Seite</span></div>
+          <div class="exercise-desc">Tiefster Hüftbeuger-Stretch — nach Kniebeugen und Kreuzheben essenziell.</div>
+        </div>
+        <div class="exercise-item last">
+          <div class="exercise-head"><span class="exercise-name">Supine Spinal Twist</span><span class="badge badge-blue">60s/Seite</span></div>
+          <div class="exercise-desc">LWS dekomprimieren, Thorax öffnen. Perfekter Abschluss.</div>
+        </div>
+      </div>
+
+      <div class="section-label"><i class="ti ti-moon"></i> Abend / Schlaf-Primer (6 min)</div>
+      <div class="card">
+        <div class="exercise-item">
+          <div class="exercise-head"><span class="exercise-name">Legs-up-the-Wall</span><span class="badge badge-green">3 min</span></div>
+          <div class="exercise-desc">Parasympathikus aktivieren, Cortisol senken. Direkt vor Schlaf.</div>
+        </div>
+        <div class="exercise-item">
+          <div class="exercise-head"><span class="exercise-name">4-7-8 Atemübung</span><span class="badge badge-green">5 Zyklen</span></div>
+          <div class="exercise-desc">Einatmen 4s, halten 7s, ausatmen 8s. Nervensystem beruhigen.</div>
+        </div>
+        <div class="exercise-item last">
+          <div class="exercise-head"><span class="exercise-name">Progressive Muskelrelaxation</span><span class="badge badge-green">3 min</span></div>
+          <div class="exercise-desc">Residualspannung aus Beinen lösen für besseren Tiefschlaf.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLEEP TAB -->
+    <div class="tab" id="tab-sleep">
+      <div class="alert-box alert-warning">
+        Tiefschlaf aktuell 0.72h — Ziel 1.5h. Größte Stellschraube für VO2max + Regeneration.
+      </div>
+
+      <div class="section-label">Abendroutine Checkliste</div>
+      <div class="card">
+        <div class="check-item" onclick="toggleCheck(this, 'c0')" id="check-c0">
+          <div class="check-box" id="c0"><i class="ti ti-check"></i></div>
+          <span class="check-label">Letzter Kaffee vor 14:00 Uhr</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this, 'c1')" id="check-c1">
+          <div class="check-box" id="c1"><i class="ti ti-check"></i></div>
+          <span class="check-label">Abendessen vor 20:00 Uhr</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this, 'c2')" id="check-c2">
+          <div class="check-box" id="c2"><i class="ti ti-check"></i></div>
+          <span class="check-label">Night Shift ab 21:30 Uhr</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this, 'c3')" id="check-c3">
+          <div class="check-box" id="c3"><i class="ti ti-check"></i></div>
+          <span class="check-label">Abend-Mobility gemacht (6 min)</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this, 'c4')" id="check-c4">
+          <div class="check-box" id="c4"><i class="ti ti-check"></i></div>
+          <span class="check-label">Zimmer kühl (17–19°C) + dunkel</span>
+        </div>
+        <div class="check-item last" onclick="toggleCheck(this, 'c5')" id="check-c5">
+          <div class="check-box" id="c5"><i class="ti ti-check"></i></div>
+          <span class="check-label">Im Bett vor 23:00 Uhr</span>
+        </div>
+      </div>
+
+      <div class="section-label">4-Wochen-Protokoll</div>
+      <div class="card">
+        <div class="protocol-step">
+          <div class="protocol-dot" style="background:#639922;"></div>
+          <div><div class="protocol-title">Woche 1 — Anker setzen</div><div class="protocol-desc">Feste Schlaf/Aufwachzeit + Koffein-Cutoff 14h. Nur das, nichts weiter.</div></div>
+        </div>
+        <div class="protocol-step">
+          <div class="protocol-dot" style="background:#EF9F27;"></div>
+          <div><div class="protocol-title">Woche 2 — Umgebung</div><div class="protocol-desc">Raumtemperatur 17–19°C, Verdunklung, Blue-Light-Reduktion ab 21:30.</div></div>
+        </div>
+        <div class="protocol-step">
+          <div class="protocol-dot" style="background:#378ADD;"></div>
+          <div><div class="protocol-title">Woche 3 — Ernährung & Supplements</div><div class="protocol-desc">Mahlzeit vor 20h. Magnesium Glycinat 200–400mg vor Schlaf.</div></div>
+        </div>
+        <div class="protocol-step last">
+          <div class="protocol-dot" style="background:#1D9E75;"></div>
+          <div><div class="protocol-title">Woche 4 — Auswertung</div><div class="protocol-desc">Bevel-Export schicken. Tiefschlaf-Verbesserung messen und anpassen.</div></div>
+        </div>
+      </div>
+
+      <div class="section-label">Supplements für Schlaf</div>
+      <div class="card">
+        <div class="supp-item" onclick="toggleSupp(this, 's0')" id="supp-s0">
+          <div class="supp-check" id="s0"><i class="ti ti-check"></i></div>
+          <div class="supp-info">
+            <div class="supp-name">Magnesium Glycinat</div>
+            <div class="supp-detail">200–400mg abends · Tiefschlaf + HRV-Optimierung · Prio 1</div>
+          </div>
+          <div class="supp-time">Abends</div>
+        </div>
+        <div class="supp-item" onclick="toggleSupp(this, 's1')" id="supp-s1">
+          <div class="supp-check" id="s1"><i class="ti ti-check"></i></div>
+          <div class="supp-info">
+            <div class="supp-name">Kreatin Monohydrat</div>
+            <div class="supp-detail">3–5g täglich · Kraft, Muskeln, kognitive Funktion · #1 evidenzbasiert</div>
+          </div>
+          <div class="supp-time">Jederzeit</div>
+        </div>
+        <div class="supp-item" onclick="toggleSupp(this, 's2')" id="supp-s2">
+          <div class="supp-check" id="s2"><i class="ti ti-check"></i></div>
+          <div class="supp-info">
+            <div class="supp-name">Vitamin D3 + K2</div>
+            <div class="supp-detail">2000–4000 IU D3, 100mcg K2 · Immun, Knochen, Testosteron</div>
+          </div>
+          <div class="supp-time">Morgens</div>
+        </div>
+        <div class="supp-item last" onclick="toggleSupp(this, 's3')" id="supp-s3">
+          <div class="supp-check" id="s3"><i class="ti ti-check"></i></div>
+          <div class="supp-info">
+            <div class="supp-name">Omega-3 (EPA+DHA)</div>
+            <div class="supp-detail">2–3g täglich · Entzündungshemmend, Recovery, Herzgesundheit</div>
+          </div>
+          <div class="supp-time">Mit Mahlzeit</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main-content -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="showTab('checkin',this)" aria-label="Check-in">
+      <i class="ti ti-clipboard-check"></i>
+      <span>Check-in</span>
+    </button>
+    <button class="nav-item" onclick="showTab('coach',this)" aria-label="Coach">
+      <i class="ti ti-message-bolt"></i>
+      <span>Coach</span>
+    </button>
+    <button class="nav-item" onclick="showTab('dashboard',this);buildCharts()" aria-label="Dashboard">
+      <i class="ti ti-chart-line"></i>
+      <span>Dashboard</span>
+    </button>
+    <button class="nav-item" onclick="showTab('workout',this)" aria-label="Workout">
+      <i class="ti ti-barbell"></i>
+      <span>Workout</span>
+    </button>
+    <button class="nav-item" onclick="showTab('nutrition',this)" aria-label="Ernährung">
+      <i class="ti ti-salad"></i>
+      <span>Ernährung</span>
+    </button>
+    <button class="nav-item" onclick="showTab('logbook',this)" aria-label="Logbuch">
+      <i class="ti ti-book"></i>
+      <span>Logbuch</span>
+    </button>
+    <button class="nav-item" onclick="showTab('mobility',this)" aria-label="Mobility">
+      <i class="ti ti-body-scan"></i>
+      <span>Mobility</span>
+    </button>
+    <button class="nav-item" onclick="showTab('sleep',this)" aria-label="Schlaf">
+      <i class="ti ti-moon"></i>
+      <span>Schlaf</span>
+    </button>
+  </nav>
+
+  <!-- SETTINGS MODAL -->
+  <div class="modal-overlay" id="settingsModal" style="display:none;" onclick="if(event.target===this)hideSettings()">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Einstellungen</div>
+        <button class="modal-close" onclick="hideSettings()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Anthropic API Key</label>
+        <input class="inp" type="password" id="apiKeyInput" placeholder="sk-ant-...">
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Wird nur lokal gespeichert. Nie geteilt.</div>
+      </div>
+      <div class="form-field" style="margin-top:12px;">
+        <label class="form-label">Gewicht (kg)</label>
+        <input class="inp" type="number" id="weightInput" placeholder="63" step="0.1">
+      </div>
+      <div class="form-field" style="margin-top:12px;">
+        <label class="form-label">HRV Basis-Schnitt (ms)</label>
+        <input class="inp" type="number" id="hrvBaseInput" placeholder="78">
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()" style="margin-top:16px;">
+        <i class="ti ti-device-floppy"></i> Speichern
+      </button>
+    </div>
+  </div>
+
+</div><!-- end app -->
+
+<script src="js/app.js"></script>
+<script src="js/checkin.js"></script>
+<script src="js/coach.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/workout.js"></script>
+<script src="js/nutrition.js"></script>
+<script src="js/logbook.js"></script>
+<script src="js/mobility.js"></script>
+<script src="js/sleep.js"></script>
+
+</body>
+</html>
